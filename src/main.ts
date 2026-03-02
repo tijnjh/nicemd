@@ -19,7 +19,10 @@ Bun.serve({
         });
       } catch (error) {
         return Response.json(
-          { error: "could not fetch the markdown file. is the url correct?" },
+          {
+            error,
+            message: "could not fetch the markdown file. is the url correct?",
+          },
           { status: 500 },
         );
       }
