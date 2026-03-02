@@ -50,7 +50,7 @@ Bun.serve({
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       } catch (error) {
-        return Response.json({ errorMessage }, { status: 500 });
+        return Response.json({ errorMessage, error }, { status: 500 });
       }
     },
   },
