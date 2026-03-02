@@ -1,4 +1,3 @@
-import { marked } from "marked";
 // @ts-expect-error
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
@@ -12,7 +11,7 @@ Bun.serve({
       try {
         const markdown = await (await fetch(pathname)).text();
 
-        const dirtyHtml = await marked.parse(markdown);
+        const dirtyHtml = Bun.markdown.html(markdown);
         const cleanHtml = DOMPurify.sanitize(dirtyHtml);
 
         return new Response(getTemplate({ body: cleanHtml }), {
