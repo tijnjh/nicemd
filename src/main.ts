@@ -1,30 +1,56 @@
 // @ts-expect-error
+import { tryCatch } from "typecatch";
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
+import { markdown } from "bun";
 
 Bun.serve({
   routes: {
     "/*": async (c) => {
-      const urlObj = new URL(c.url);
-      const pathname = urlObj.pathname.substring(1);
+      let errorMessage: string | undefined = undefined;
 
       try {
-        const markdown = await (await fetch(pathname)).text();
+        const urlObj = new URL(c.url);
+        const pathname = urlObj.pathname.substring(1);
 
-        const dirtyHtml = Bun.markdown.html(markdown);
-        const cleanHtml = DOMPurify.sanitize(dirtyHtml);
+        // const markdown = await tryCatch(() => ) await fetch(pathname)).text());
 
-        return new Response(getTemplate({ body: cleanHtml }), {
+        const markdownResponse = await tryCatch(fetch(pathname));
+
+        if (markdownResponse.error) {
+          errorMessage =
+            "could not fetch the markdown file. is the file path correct?";
+          throw new Error(errorMessage);
+        }
+
+        const markdown = await tryCatch(markdownResponse.data.text());
+
+        if (markdown.error) {
+          errorMessage =
+            "could not read the markdown file. is the file accessible?";
+          throw new Error(errorMessage);
+        }
+
+        const dirtyHtml = tryCatch(() => Bun.markdown.html(markdown.data));
+
+        if (dirtyHtml.error) {
+          errorMessage =
+            "could not parse the markdown file. is the file valid markdown?";
+          throw new Error(errorMessage);
+        }
+
+        const cleanHtml = tryCatch(() => DOMPurify.sanitize(dirtyHtml.data));
+
+        if (cleanHtml.error) {
+          errorMessage = "could not sanitize the HTML content.";
+          throw new Error(errorMessage);
+        }
+
+        return new Response(getTemplate({ body: cleanHtml.data }), {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       } catch (error) {
-        return Response.json(
-          {
-            error,
-            message: "could not fetch the markdown file. is the url correct?",
-          },
-          { status: 500 },
-        );
+        return Response.json({ errorMessage }, { status: 500 });
       }
     },
   },

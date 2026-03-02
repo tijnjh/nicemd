@@ -2,7 +2,8 @@
   "type": "module",
   "main": "./src/main.ts",
   "dependencies": {
-    "isomorphic-dompurify": "^3.0.0"
+    "isomorphic-dompurify": "^3.0.0",
+    "typecatch": "^0.2.5"
   },
   "devDependencies": {
     "@types/bun": "^1.3.9"
