@@ -1,5 +1,5 @@
-// @ts-expect-error
 import { tryCatch } from "typecatch";
+// @ts-expect-error
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
 import { markdown } from "bun";
