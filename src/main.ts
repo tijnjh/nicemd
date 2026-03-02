@@ -2,55 +2,67 @@ import { tryCatch } from "typecatch";
 // @ts-expect-error
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
-import { markdown } from "bun";
+
+interface Err {
+  error: Error;
+  message: string;
+}
+
+function err(e: Err) {
+  return e;
+}
 
 Bun.serve({
   routes: {
     "/*": async (c) => {
-      let errorMessage: string | undefined = undefined;
-
       try {
         const urlObj = new URL(c.url);
         const pathname = urlObj.pathname.substring(1);
 
-        // const markdown = await tryCatch(() => ) await fetch(pathname)).text());
-
         const markdownResponse = await tryCatch(fetch(pathname));
 
         if (markdownResponse.error) {
-          errorMessage =
-            "could not fetch the markdown file. is the file path correct?";
-          throw new Error(errorMessage);
+          throw err({
+            error: markdownResponse.error,
+            message:
+              "could not read the markdown file. is the file accessible?",
+          });
         }
 
         const markdown = await tryCatch(markdownResponse.data.text());
 
         if (markdown.error) {
-          errorMessage =
-            "could not read the markdown file. is the file accessible?";
-          throw new Error(errorMessage);
+          throw err({
+            error: markdown.error,
+            message:
+              "could not read the markdown file. is the file accessible?",
+          });
         }
 
         const dirtyHtml = tryCatch(() => Bun.markdown.html(markdown.data));
 
         if (dirtyHtml.error) {
-          errorMessage =
-            "could not parse the markdown file. is the file valid markdown?";
-          throw new Error(errorMessage);
+          throw err({
+            error: dirtyHtml.error,
+            message: "could not convert markdown to HTML.",
+          });
         }
 
         const cleanHtml = tryCatch(() => DOMPurify.sanitize(dirtyHtml.data));
 
         if (cleanHtml.error) {
-          errorMessage = "could not sanitize the HTML content.";
-          throw new Error(errorMessage);
+          throw err({
+            error: cleanHtml.error,
+            message: "could not sanitize the HTML content.",
+          });
         }
 
         return new Response(getTemplate({ body: cleanHtml.data }), {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
-      } catch (error) {
-        return Response.json({ errorMessage, error }, { status: 500 });
+      } catch (e) {
+        const error = e as Err;
+        return Response.json(error, { status: 500 });
       }
     },
   },
