@@ -1,4 +1,4 @@
-import { tryCatch } from "typecatch";
+import { Result } from "better-result";
 // @ts-expect-error
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
@@ -19,9 +19,9 @@ Bun.serve({
         const urlObj = new URL(c.url);
         const pathname = urlObj.pathname.substring(1);
 
-        const markdownResponse = await tryCatch(fetch(pathname));
+        const markdownResponse = await Result.tryPromise(() => fetch(pathname));
 
-        if (markdownResponse.error) {
+        if (markdownResponse.isErr()) {
           throw err({
             error: markdownResponse.error,
             message:
@@ -29,9 +29,11 @@ Bun.serve({
           });
         }
 
-        const markdown = await tryCatch(markdownResponse.data.text());
+        const markdown = await Result.tryPromise(() =>
+          markdownResponse.value.text(),
+        );
 
-        if (markdown.error) {
+        if (markdown.isErr()) {
           throw err({
             error: markdown.error,
             message:
@@ -39,25 +41,25 @@ Bun.serve({
           });
         }
 
-        const dirtyHtml = tryCatch(() => Bun.markdown.html(markdown.data));
+        const dirtyHtml = Result.try(() => Bun.markdown.html(markdown.value));
 
-        if (dirtyHtml.error) {
+        if (dirtyHtml.isErr()) {
           throw err({
             error: dirtyHtml.error,
             message: "could not convert markdown to HTML.",
           });
         }
 
-        const cleanHtml = tryCatch(() => DOMPurify.sanitize(dirtyHtml.data));
+        const cleanHtml = Result.try(() => DOMPurify.sanitize(dirtyHtml.value));
 
-        if (cleanHtml.error) {
+        if (cleanHtml.isErr()) {
           throw err({
             error: cleanHtml.error,
             message: "could not sanitize the HTML content.",
           });
         }
 
-        return new Response(getTemplate({ body: cleanHtml.data }), {
+        return new Response(getTemplate({ body: cleanHtml.value }), {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       } catch (e) {
