@@ -2,6 +2,7 @@ import { Result } from "better-result";
 // @ts-expect-error
 import twTypographyCss from "./tw-typography.css" with { type: "text" };
 import DOMPurify from "isomorphic-dompurify";
+import { init, renderToHtml } from "md4x/wasm";
 
 interface Err {
   error: Error;
@@ -11,6 +12,8 @@ interface Err {
 function err(e: Err) {
   return e;
 }
+
+await init();
 
 Bun.serve({
   routes: {
@@ -41,7 +44,7 @@ Bun.serve({
           });
         }
 
-        const dirtyHtml = Result.try(() => Bun.markdown.html(markdown.value));
+        const dirtyHtml = Result.try(() => renderToHtml(markdown.value));
 
         if (dirtyHtml.isErr()) {
           throw err({
